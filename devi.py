@@ -1,46 +1,58 @@
-from jinja2 import Environment, BaseLoader
+import argparse
 import pyperclip
-import readchar
+from template_handler import TemplateHandler
+from recorder import Recorder
 
-env = Environment(loader=BaseLoader())
+# Parse CLI arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('--record', help='Session name', metavar='name')
+args = parser.parse_args()
 
-planner_prompt_template = env.from_string(open("prompts/plan.jinja2").read().strip())
-code_prompt_template = env.from_string(open("prompts/code.jinja2").read().strip())
-update_code_template = env.from_string(open("prompts/update_code.jinja2").read().strip())
+# Load template handler
+template_handler = TemplateHandler()
 
+# Load recorder
+recorder = Recorder(args.record)
+
+# Request task from user
 task = input("Task: ")
-# task = "create a snake game in python in the terminal itself" # TEST
 
-########
-# plan #
-########
-pyperclip.copy(planner_prompt_template.render(task=task))
+# Planner
+planner_prompt = template_handler.render_planner_prompt(task)
+
+pyperclip.copy(planner_prompt)
+recorder.record("plan", "prompt", planner_prompt)
+
 print("copied planner prompt")
-
-input("copy to clipboard and press enter to continue")
+input("copy output from LLM to clipboard and press enter to continue")
 plan_output = pyperclip.paste()
 
-# plan_output = open("test_data/plan_output.txt").read().strip() # TEST
+recorder.record("plan", "output", plan_output)
 
-########
-# code #
-########
-pyperclip.copy(code_prompt_template.render(plan_output=plan_output))
-print("copied code")
+# Code first version
+code_prompt = template_handler.render_code_prompt(plan_output)
 
-input("copy to clipboard and press enter to continue")
+pyperclip.copy(code_prompt)
+recorder.record("code", "prompt", code_prompt)
+
+print("copied code prompt")
+
+input("copy output from LLM to clipboard and press enter to continue")
 code_output = pyperclip.paste()
+recorder.record("code", "output", code_output)
 
-#############
-# reiterate #
-#############
-
-feat = ""
+# Reiterate on the code based on feedback from user
+iteration_count = 1
 while True:
-    feat = input("Feature/Bug (q to quit):  ")
+    feat = input("Feature/Bug (q to quit): ")
     if feat == "q":
         quit(0)
 
-    code = pyperclip.paste()
-    pyperclip.copy(update_code_template.render(code=code, feat=feat))
+    updated_code_prompt = template_handler.render_update_code(code_output, feat)
+    recorder.record(f"reiterate_{iteration_count}", "prompt", updated_code_prompt)
+    pyperclip.copy(updated_code_prompt)
     print("prompt copied")
+
+    input("copy output from LLM to clipboard and press enter to continue")
+    code_output = pyperclip.paste()
+    recorder.record(f"reiterate_{iteration_count}", "output", code_output)
