@@ -1,8 +1,8 @@
-# Devi - AI Agent 🤖💻
+# Devi 🤖💻
 
 > Devi is devika's genz aesthetic goth art-enthusiast sister 
 
-> This project is built to optimize Devika's prompts and data/instruction flow
+This project is built to optimize Devika's prompts and data/instruction flow.
 
 ## Features ✨
 
